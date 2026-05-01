@@ -1,0 +1,18 @@
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/
+
+# Local backups (caso alguém clone e teste localmente)
+*.bak
+*.bak-*
+*.clobbered.*
+
+# Logs
+*.log
+
+# Trash dirs (durante operação dos scripts)
+_trash/
