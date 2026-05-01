@@ -1,146 +1,184 @@
 # OpenClaw Update Toolkit
 
 > **Diagnostic-driven recovery toolkit** para estabilizar instalações OpenClaw rodando entre **v2026.4.24 e v2026.4.29**.
-> Compilado a partir de incidents reais e fixes validados em produção.
-> Cobre: custos inesperados, crashes pós-upgrade, plugin conflicts, leak de DM, label cosmético enganoso.
+> Cole este repo no Claude Code, ele faz tudo pra você.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![Version](https://img.shields.io/badge/OpenClaw-v2026.4.29-blue)
+![OpenClaw](https://img.shields.io/badge/OpenClaw-v2026.4.29-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 
 ---
 
-## 📌 O que é isso?
+## 🚀 Como usar — em 1 mensagem
+
+Cole isso no Claude Code do seu computador (Mac/PC). Substitua `<seu-vps-ip>` pelo IP da sua VPS:
+
+```
+Lê https://github.com/totobusnello/openclaw-update-toolkit/blob/main/CLAUDE-INSTRUCTIONS.md
+e arruma minha instalação OpenClaw seguindo o protocolo.
+SSH: root@<seu-vps-ip>
+```
+
+Pronto. O Claude vai:
+1. Conectar via SSH na sua VPS
+2. Rodar diagnóstico read-only (~3min)
+3. Apresentar plano de ação organizado por severidade
+4. Pedir autorização do que aplicar
+5. Aplicar com backup automático + validar
+
+---
+
+## 🎯 Quantas autorizações você vai dar
+
+Modo **híbrido por severidade** — sem floreio, sem 12 perguntas chatas:
+
+| Bateria | Você responde | Quando | Tempo médio |
+|---------|---------------|--------|--------------|
+| **🔴 ALTA — 1 autorização batch** | "vai" / "sim" | Sempre que o diagnóstico achar problema crítico (custo ativo, fratricide, plugin duplicate poller, credentials sem chattr) | ~3min total pra todas |
+| **🟡 MÉDIA — 1 pergunta por recipe** | "ok" / "pula" | Pra cada recipe MÉDIA aplicável (RelayPlane, fallback chain, dmScope, sessions, delivery-queue) | ~15s cada |
+| **🟢 BAIXA — só se pedir** | Você fala "também as cosméticas" se quiser | Patches cosméticos (label OAuth, cleanup disk) | opcional |
+
+**Pior caso (instalação muito danificada):** ~5 autorizações totais.
+**Caso comum:** 2-3 autorizações totais.
+**Caso ideal (instalação quase ok):** 1 autorização ou nenhuma.
+
+---
+
+## 📌 O que esse toolkit resolve
 
 Quando você atualiza o OpenClaw entre versões `2026.4.24 → 2026.4.29`, **vários problemas silenciosos** podem aparecer — desde gateway crash loops até cobranças inesperadas na Anthropic API. Esses problemas raramente estão na documentação oficial e custam horas pra debugar do zero.
 
-Este toolkit:
-- ✅ Faz **diagnóstico read-only** completo do estado da sua instalação
-- ✅ Identifica qual sintoma você tem casando com **fix recipes específicas**
-- ✅ Aplica fixes com **backup + validation + revert** documentados pra cada um
-- ✅ Roda **10 invariants check** pra confirmar que ficou estável
+### Sintomas que você pode estar tendo
 
-**Pra quem é:** quem roda OpenClaw self-hosted (VPS, dedicated server) e tem alguma instabilidade pós-upgrade.
+| Sintoma observável | O que está acontecendo | Recipe |
+|--------------------|------------------------|--------|
+| Gateway crash loop (15+ restarts/5min, "Gateway already running") | Monkey-patch fratricide #62028 perdido pós-upgrade | **D** 🔴 |
+| Custos inesperados na Anthropic API | Agentes usando profile pago em vez de OAuth Max | **B** 🔴 |
+| `[telegram] getUpdates conflict 409` recorrente | Plugin MCP do Claude CLI fazendo polling paralelo | **G** 🔴 |
+| Workers `openclaw-channels` em 96% CPU | Mesmo problema acima — retry-loop em cascata | **G** 🔴 |
+| Agents falham com "Not logged in" / 401 após algumas horas | `.credentials.json` truncando ciclicamente sem TTY | **E** 🔴 |
+| RelayPlane reativo após upgrade | npm reescreveu `baseUrl` para `127.0.0.1:4100` | **F** 🟡 |
+| Fallback grudado em modelo pago | Chain com `anthropic-max` ou similar | **C** 🟡 |
+| DMs misturando contexto entre peers | `session.dmScope=main` (default leak) | **H** 🟡 |
+| Sessions grudaram em fallback model | `sessions.json` persistiu turn antigo | **L** 🟡 |
+| `delivery-queue` com 15+ "Unknown Channel" | Canais removidos deixaram mensagens órfãs | **I** 🟡 |
+| Display mostra "🔑 token" confundindo com cobrança | Label cosmético do plugin session-status | **J** 🟢 |
+| Disco enchendo com `plugin-runtime-deps/openclaw-2026.*` | npm não limpa versões antigas | **K** 🟢 |
 
-**Pra quem NÃO é:** usuários do app desktop / cloud-managed (esses problemas não se aplicam).
-
----
-
-## 🚀 Quick start (3 passos)
-
-### 1. Diagnóstico read-only (~3min)
-
-Conecte na VPS e rode:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/totobusnello/openclaw-update-toolkit/main/scripts/diagnostic.sh | bash
-```
-
-Ou clone e rode local:
-
-```bash
-git clone https://github.com/totobusnello/openclaw-update-toolkit.git
-cd openclaw-update-toolkit
-bash scripts/diagnostic.sh
-```
-
-Output: tabela markdown com 14 seções de estado (versão, fratricide, custo zero, telegram conflicts, plugins, credentials, baseUrl, RelayPlane, sessions, disk usage).
-
-### 2. Identificar fix recipes aplicáveis
-
-Cada linha da tabela do diagnóstico mostra:
-- ✅ se está OK
-- ⚠️ qual Recipe aplicar se está com problema
-
-Recipes vão de A a L — priorizadas por severidade no [`docs/recovery-guide.md`](docs/recovery-guide.md).
-
-### 3. Aplicar fixes (com Claude Code, recomendado)
-
-Cole o conteúdo de [`docs/recovery-guide.md`](docs/recovery-guide.md) no Claude Code do seu Mac/PC, junto com o output do diagnóstico, e fale:
-
-> "Conecte na minha VPS via SSH (`<vps-ip>`). Leia o guide e o output do diagnóstico. Identifique recipes aplicáveis e me peça autorização explícita pra cada uma antes de executar. Faça backup antes de qualquer write."
-
-O Claude vira operador, você só autoriza.
-
-### 4. Validar (~30s)
-
-```bash
-bash scripts/validate.sh
-```
-
-Espera 10 ✅. Se algum ❌, rode a Recipe que falhou.
+Cada Recipe está documentada em `recipes/<LETRA>-*.md` com causa raiz + fix + validação + revert.
 
 ---
 
-## 🗺️ Mapa do toolkit
+## 🛡️ Como funciona — você está protegido
+
+### 1. Diagnostic-first
+Antes de qualquer mudança, o Claude roda script read-only que coleta 14 seções de estado. Você vê tudo antes de decidir.
+
+### 2. Backup automático
+Antes da primeira mudança, ele cria backup completo em `/root/.openclaw/backups/recovery-<timestamp>/`:
+- `openclaw.json`
+- `.env`
+- `claude/settings.json`
+- `claude/.credentials.json`
+- arquivos do monkey-patch fratricide
+
+### 3. Sanitização total
+Tokens, credenciais, números de telefone, channel IDs **nunca** aparecem no chat. Se precisa mencionar, redact (`<REDACTED>`).
+
+### 4. Severidade explícita
+Modo híbrido evita perguntar 12 vezes. ALTA = 1 autorização batch. MÉDIA = 1 pergunta por recipe. BAIXA = só se você pedir.
+
+### 5. Auto-rollback
+Se Recipe ALTA fizer validate retornar ❌, Claude reverte sozinho usando o backup. Você é avisado.
+
+### 6. Validação 10-invariants no fim
+Roda script `validate.sh` que checa 10 condições. Esperado: 10 ✅. Se algum ❌, Claude reporta + sugere ação.
+
+### 7. Aprovação humana sempre que importa
+Os scripts são read-only. Os fixes destrutivos (chattr, patches, deletes) **só rodam com aprovação explícita sua**.
+
+---
+
+## 🗺️ Estrutura do toolkit
 
 ```
 openclaw-update-toolkit/
 ├── README.md                       # você está aqui
+├── CLAUDE-INSTRUCTIONS.md          # mega-prompt operacional pro Claude (não precisa ler)
 ├── LICENSE                          # MIT
 ├── docs/
-│   ├── recovery-guide.md            # Guide completo (12 fix recipes + decision tree + 10 aprendizados)
+│   ├── recovery-guide.md            # Guide completo (12 fix recipes + decision tree + lessons)
 │   ├── concepts.md                  # Por que esses problemas existem (em breve)
 │   └── faq.md                       # Perguntas frequentes (em breve)
 ├── scripts/
 │   ├── diagnostic.sh                # Phase 0 standalone (~3min, read-only)
-│   ├── validate.sh                  # Phase 5 — 10-invariant check
-│   └── recipes/                     # Helpers automatizados por Recipe (em breve)
-├── recipes/                         # 1 .md por Recipe (em breve — Fase 2)
-├── runbooks/                        # Caminhos completos por cenário (em breve — Fase 2)
+│   ├── validate.sh                  # 10-invariant check (exit code = nº de fails)
+│   └── recipes/                     # Helpers automatizados por Recipe
+│       ├── reapply-monkey-patch.sh  # Recipe D
+│       ├── disable-telegram-mcp.sh  # Recipe G
+│       ├── kill-switch-cost.sh      # Recipe B
+│       ├── chattr-credentials.sh    # Recipe E
+│       ├── relayplane-disable.sh    # Recipe F
+│       ├── clean-fallback-chain.sh  # Recipe C
+│       ├── dmscope-fix.sh           # Recipe H
+│       ├── reset-sessions.sh        # Recipe L
+│       ├── delivery-queue-cleanup.sh # Recipe I
+│       ├── reapply-emoji-patch.py   # Recipe J
+│       └── cleanup-plugin-runtime-deps.sh # Recipe K
+├── recipes/                        # 1 .md por Recipe (referência detalhada)
+│   ├── A-upgrade-controlado.md
+│   ├── B-kill-switch-anthropic.md
+│   ├── C-fallback-chain-limpa.md
+│   ├── D-monkey-patch-fratricide.md
+│   ├── E-credentials-immutable.md
+│   ├── F-relayplane-disable.md
+│   ├── G-telegram-mcp-disable.md
+│   ├── H-dmscope-per-channel-peer.md
+│   ├── I-delivery-queue-cleanup.md
+│   ├── J-label-oauth-max-patch.md
+│   ├── K-plugin-runtime-deps-cleanup.md
+│   └── L-sessions-stickiness-reset.md
+├── runbooks/                       # Caminhos completos por cenário (em breve)
 │   ├── upgrade-from-v24-to-v29.md
 │   ├── recovery-from-fratricide-loop.md
 │   └── recovery-from-cost-explosion.md
-└── lessons/                         # Insights por incident (em breve — Fase 2)
+└── lessons/                        # Insights por incident (em breve)
+    └── 2026-05-01-mcp-duplicate-poller.md
 ```
 
 ---
 
-## 🩺 Sintomas que esse toolkit resolve
+## ⚙️ Métodos alternativos de uso
 
-| Sintoma observável | Recipe |
-|--------------------|--------|
-| Gateway crash loop (15+ restarts/5min, "Gateway already running") | **D** — Reaplicar monkey-patch fratricide #62028 |
-| Custos inesperados na Anthropic API | **B** — Kill switch (forçar agentRuntime=claude-cli) |
-| Fallback grudado em modelo pago | **C** — Limpar fallback chain |
-| `[telegram] getUpdates conflict 409` recorrente | **G** — Disable plugin Telegram MCP |
-| Workers `openclaw-channels` em 96% CPU | **G** (mesmo fix acima) |
-| DMs misturando contexto entre peers diferentes | **H** — Setar `session.dmScope=per-channel-peer` |
-| Agents falham com "Not logged in" / 401 | **E** — `chattr +i` em `.credentials.json` |
-| RelayPlane:4100 reativo após upgrade | **F** — Desativar + corrigir baseUrl |
-| Display mostra "🔑 token" confundindo com cobrança | **J** — Patch local label OAuth Max |
-| Sessions grudaram em fallback model | **L** — Reset sessions.json |
-| Disco enchendo com `plugin-runtime-deps/openclaw-2026.*` | **K** — Cleanup dirs stale |
-| `delivery-queue` com 15+ "Unknown Channel" | **I** — Cleanup queue órfã |
+### Método 1 — Claude Code (recomendado)
 
-Cada Recipe está documentada em detalhes no [`docs/recovery-guide.md`](docs/recovery-guide.md) com **causa raiz**, **comando exato**, **validação** e **revert**.
+Já descrito acima. Mais fácil. Usuário quase não faz nada.
 
----
+### Método 2 — Manual (se preferir controle total)
 
-## ⚙️ Como o toolkit funciona
+Direto via SSH na sua VPS:
 
-### Diagnostic-driven, não linear
+```bash
+# 1. Diagnóstico
+curl -fsSL https://raw.githubusercontent.com/totobusnello/openclaw-update-toolkit/main/scripts/diagnostic.sh | sudo bash
 
-Tutoriais lineares ("rode A → B → C") não funcionam porque cada instalação está num estado diferente:
-- versão exata
-- quais channels estão habilitados (Discord/Telegram/WhatsApp/Slack)
-- agentes customizados
-- histórico de upgrades passados
+# 2. Ler output, decidir quais Recipes aplicar
 
-O toolkit roda **diagnóstico primeiro** e identifica EXATAMENTE quais fixes você precisa. Você só aplica o que é relevante.
+# 3. Aplicar Recipes individuais (exemplo Recipe D — monkey-patch)
+curl -fsSL https://raw.githubusercontent.com/totobusnello/openclaw-update-toolkit/main/scripts/recipes/reapply-monkey-patch.sh | sudo bash
 
-### Backup antes, revert depois
+# 4. Validar
+curl -fsSL https://raw.githubusercontent.com/totobusnello/openclaw-update-toolkit/main/scripts/validate.sh | sudo bash
+```
 
-Toda Recipe tem:
-- **Backup automático** (timestamped) antes de qualquer write
-- **Validation** explícita pra confirmar que o fix funcionou
-- **Revert** documentado caso algo dê errado
+### Método 3 — Clone local (pra modificar)
 
-Backups ficam em `/root/.openclaw/backups/recovery-<timestamp>/`.
-
-### Aprovação humana sempre
-
-Os scripts são read-only. Os fixes destrutivos (chattr, patches, deletes) **só rodam com aprovação explícita** quando você usa o fluxo recomendado via Claude Code.
+```bash
+git clone https://github.com/totobusnello/openclaw-update-toolkit.git
+cd openclaw-update-toolkit
+# editar conforme necessário
+sudo bash scripts/diagnostic.sh
+```
 
 ---
 
@@ -163,11 +201,11 @@ Coisas que custaram horas/dias pra descobrir e estão documentadas no `docs/reco
 
 ## 🔄 Manutenção e atualizações
 
-Esse toolkit é **mantido ativamente** sincronizado com nossa instalação OpenClaw real. Cada vez que descobrirmos um novo problema ou fix, atualizamos aqui.
+Esse toolkit é **mantido ativamente** sincronizado com uma instalação OpenClaw real em produção. Cada vez que o time encontra um novo problema/fix, atualizamos aqui.
 
-- **Versionamento:** [`CHANGELOG.md`](CHANGELOG.md) (em breve) lista atualizações por data
+- **Versionamento:** `CHANGELOG.md` lista atualizações por data
 - **Trigger de update:** após qualquer incident documentado em produção
-- **Compatibilidade:** v2026.4.29 é o foco principal. Versões anteriores (v.24-v.28) cobertas em runbooks específicos
+- **Compatibilidade:** v2026.4.29 é o foco principal. Versões anteriores cobertas em runbooks específicos
 - **Quando OpenClaw shipar v2026.4.30+:** algumas Recipes podem ficar obsoletas. Vamos atualizar.
 
 ---
@@ -182,17 +220,20 @@ Abra issue em [github.com/totobusnello/openclaw-update-toolkit/issues](https://g
 - Sintoma observável (mensagem de erro, comportamento)
 - Comando que disparou (se aplicável)
 
-### Sugerir Recipe
+### Sugerir Recipe nova
 
-PR welcome com formato:
+PR welcome com formato em `recipes/<LETRA-OU-NOVO>-<nome>.md`:
 ```
 ## Recipe X — <título curto>
+**SEVERIDADE:** ALTA / MÉDIA / BAIXA
 **SYMPTOM:** <o que o user vê>
 **CAUSA RAIZ:** <explicação técnica>
 **FIX:** <comando exato>
 **VALIDATION:** <como confirmar>
 **REVERT:** <como desfazer>
 ```
+
+E (idealmente) um script idempotente em `scripts/recipes/`.
 
 ---
 
