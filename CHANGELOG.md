@@ -5,6 +5,22 @@ Todas as mudanças notáveis deste toolkit serão documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versionamento independente do OpenClaw — kit segue semver próprio.
 
+## [0.3.0] — 2026-05-01 (Phase 3)
+
+### Adicionado
+- **GitHub Actions** (`.github/workflows/lint.yml`) — shellcheck nos scripts (warning level), ruff em Python, markdownlint advisory, link-check pra validar referências internas dos recipes
+- **3 issue templates** (`.github/ISSUE_TEMPLATE/`):
+  - `bug-report.md` — bug no toolkit
+  - `new-symptom.md` — usuário descobriu novo problema OpenClaw
+  - `recipe-suggestion.md` — usuário tem fix pronto pra contribuir
+- **3 runbooks completos** em `runbooks/`:
+  - `upgrade-from-v24-to-v29.md` — passo-a-passo controlado de upgrade entre versões intermediárias até v.29
+  - `recovery-from-fratricide-loop.md` — recovery emergencial de crash loop por monkey-patch perdido
+  - `recovery-from-cost-explosion.md` — recovery de cobrança inesperada Anthropic + canary preventivo
+
+### Sustentabilidade
+- Sync script no upstream privado (`openclaw-vps/infra/scripts/sync-to-toolkit.sh`) — sanitiza lessons + abre PR pro toolkit pra revisão manual
+
 ## [0.2.0] — 2026-05-01 (Phase 2)
 
 ### Adicionado
