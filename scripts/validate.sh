@@ -35,7 +35,7 @@ check() {
   fi
 }
 
-echo "# OpenClaw Update Toolkit — 10-invariant Validation"
+echo "# OpenClaw Update Toolkit — 14-invariant Validation (v5.2-aware)"
 echo "**Gerado em:** $(date -Iseconds)"
 echo
 
@@ -93,6 +93,58 @@ check "session.dmScope != main" \
 check "zero anthropic API calls última hora" \
   '[ "$(journalctl -u openclaw-gateway --since "1 hour ago" --no-pager 2>/dev/null | grep -cE "api\.anthropic\.com|x-api-key")" = "0" ]' \
   "Recipe B"
+
+# ============================================================================
+# Invariants 11-14 — v5.2-aware checks (skip se versão < 5.2)
+# ============================================================================
+INSTALLED_VERSION=$(openclaw --version 2>/dev/null | awk '{print $2}' | head -1)
+INSTALLED_MAJOR=$(echo "$INSTALLED_VERSION" | awk -F. '{print $2}')
+INSTALLED_MINOR=$(echo "$INSTALLED_VERSION" | awk -F. '{print $3}')
+IS_V5_2_PLUS=false
+if [[ -n "$INSTALLED_MAJOR" ]] && { [[ "$INSTALLED_MAJOR" -gt 4 ]] || { [[ "$INSTALLED_MAJOR" -eq 5 ]] && [[ "$INSTALLED_MINOR" -ge 2 ]]; }; }; then
+  IS_V5_2_PLUS=true
+fi
+
+# 11. web_search provider aponta pra plugin enabled+loaded (ou unset)
+check "tools.web.search.provider plugin instalado+enabled (ou unset)" \
+  'WS=$(jq -r ".tools.web.search.provider // \"none\"" "$CONFIG" 2>/dev/null);
+   [ "$WS" = "none" ] || \
+   openclaw plugins list --json 2>/dev/null | jq -e --arg p "$WS" ".plugins[] | select(.id==\$p and .enabled==true and .status==\"loaded\")" >/dev/null' \
+  "Recipe M"
+
+# 12. sem chattr +i bloqueando node_modules global (warn pré-upgrade)
+check "sem chattr +i em /usr/lib/node_modules/openclaw (warn pré-upgrade)" \
+  '[ "$(find /usr/lib/node_modules/openclaw -type f -exec lsattr {} \; 2>/dev/null | grep -c "^----i" || echo 0)" = "0" ] || \
+   { echo "    INFO: imutáveis presentes — Recipe N obrigatória ANTES do próximo npm install -g openclaw@<v>" >&2; true; }' \
+  "Recipe N (preventiva)"
+
+# 13. plugins externalizados (configurados) estão presentes em /root/.openclaw/npm/node_modules/@openclaw/
+if [[ "$IS_V5_2_PLUS" == "true" ]]; then
+  check "plugins externalizados configurados estão fisicamente presentes" \
+    'EXT_DIR=/root/.openclaw/npm/node_modules/@openclaw;
+     for cfg_plugin in $(jq -r ".plugins.entries // {} | keys[]?" "$CONFIG" 2>/dev/null); do
+       case "$cfg_plugin" in
+         whatsapp|discord|voice-call|memory-lancedb|matrix|mattermost|brave|acpx|diffs|google-chat|line|microsoft-teams)
+           if [ ! -d "$EXT_DIR/$cfg_plugin" ] && [ ! -d "/usr/lib/node_modules/openclaw/dist/extensions/$cfg_plugin" ]; then
+             exit 1
+           fi ;;
+       esac
+     done;
+     exit 0' \
+    "Recipe O"
+else
+  echo "ℹ️ skip check 13 (plugin externalization) — versão atual < 5.2"
+fi
+
+# 14. meta.lastTouchedVersion atualizado (doctor repair rodou pra 5.2+)
+if [[ "$IS_V5_2_PLUS" == "true" ]]; then
+  check "meta.lastTouchedVersion == installed (doctor repair rodou)" \
+    'LTV=$(jq -r ".meta.lastTouchedVersion // \"unset\"" "$CONFIG" 2>/dev/null);
+     [ "$LTV" = "$(openclaw --version 2>/dev/null | awk "{print \$2}")" ]' \
+    "Reiniciar gateway pra disparar doctor (passa naturalmente após primeiro request)"
+else
+  echo "ℹ️ skip check 14 (lastTouchedVersion) — versão atual < 5.2"
+fi
 
 echo
 echo "---"

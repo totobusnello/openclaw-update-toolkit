@@ -82,6 +82,9 @@ Para cada uma aplicável, pergunte ao usuário individualmente. Não em batch.
 | **H** — dmScope per-channel-peer | dmScope != per-channel-peer | "Aplico Recipe H (isola sessões DM entre peers)?" |
 | **L** — Reset sessions stickiness | sessions.json com fallback model grudado | "Aplico Recipe L (reseta sessions grudadas)?" |
 | **I** — Delivery-queue cleanup | "Unknown Channel" recorrente | "Aplico Recipe I (limpa delivery-queue órfã)?" |
+| **M** — Web search provider validation (v5.2+) | `tools.web.search.provider` aponta pra plugin disabled/missing | "Aplico Recipe M (troca pra duckduckgo, evita gateway crash na 5.2)?" |
+| **N** — chattr -i pré-`npm install -g` (qualquer versão) | imutáveis em /usr/lib/node_modules/openclaw E vai upgradar | "Aplico Recipe N ANTES do upgrade (evita binário quebrado no meio)?" |
+| **O** — Plugin externalization @openclaw/* (v5.2+) | channels (whatsapp/discord/etc) configurados mas missing em /root/.openclaw/npm/node_modules/@openclaw/ | "Aplico Recipe O (npm install dos plugins externalized juntos)?" |
 
 #### 🟢 SEVERIDADE BAIXA / COSMÉTICA — só se usuário pedir explicitamente
 
@@ -188,12 +191,23 @@ Lista em `scripts/recipes/`:
 
 Cada script é idempotente, faz backup interno, valida pós-aplicação.
 
-### 6. Versão do OpenClaw — confirme antes
-Se versão < v2026.4.29, alerte o usuário:
-> "Você está em v<X>. Toolkit é otimizado pra v2026.4.29. Recomendo upgrade primeiro (Recipe A) antes dos outros fixes — ou aceitar que algumas Recipes podem se aplicar de forma diferente."
+### 6. Versão do OpenClaw — decision tree pra recipes corretas
 
-Se versão > v2026.4.29 (futura), alerte:
-> "Você está em v<X> — toolkit pode estar desatualizado. Algumas Recipes podem ser obsoletas (problema corrigido upstream). Verifique CHANGELOG do toolkit antes."
+Detecte a versão atual via `openclaw --version` e classifique pra aplicar recipes apropriadas. Decision tree compacta:
+
+| Versão atual | Recipes aplicáveis | Notas |
+|---|---|---|
+| **< v2026.4.27** | A, B, C, D, E, F, G, H, I, L | Toolkit foi desenhado pra esta faixa. Recomende upgrade pra >= 4.27 antes |
+| **v2026.4.27 — v2026.5.1** | A-L + **N (preventiva)** | Recipe N obrigatória ANTES de qualquer `npm install -g openclaw@<v>` |
+| **>= v2026.5.2** | A-L + **M, N, O** | Recipes M (web search), N (chattr), O (plugin externalization) podem aplicar |
+
+**Pra upgrades entre versões** (ex: 4.29 → 5.2): use `runbooks/upgrade-any-version.md` — runbook genérico parametrizado com decision tree por gap. Ele orquestra Recipes A + D + N + (M se necessário) + (O se necessário) na ordem correta + watch loop com auto-rollback.
+
+Se versão **muito antiga** (< v2026.4.24):
+> "Você está em v<X>. Toolkit cobre v2026.4.24+. Recomendo upgrade incremental pra >= 4.27 antes — ou rodar diagnostic.sh pra decidir caso a caso."
+
+Se versão **futura desconhecida** (> v2026.5.2):
+> "Você está em v<X> — toolkit pode estar desatualizado. Verifique CHANGELOG.md (versão 0.4.0 cobre até v5.2). Algumas Recipes podem ter virado obsoletas (problema corrigido upstream); outras podem precisar de adaptação."
 
 ---
 
@@ -220,10 +234,12 @@ Ler primeiro o cabeçalho (severidade + sintoma) pra decidir se aplica. Depois l
 
 ## 🤝 Quando perguntar ao usuário (não decida sozinho)
 
-- Versão muito diferente da v2026.4.29 (< v.24 ou > v.30)
+- Versão muito diferente do range coberto (< v2026.4.24 ou > v2026.5.2 sem changelog atualizado)
 - Diagnostic mostra estado **inesperado** (configs custom, agentes não-padrão, channels exóticos)
 - Qualquer erro durante aplicação
 - Recipes MÉDIAS individuais (perguntar sempre)
+- Antes de aplicar Recipe N (chattr -i) se há mais de 5 imutáveis — pode indicar customizações extras
+- Antes de aplicar Recipe O (plugin externalization) se já há plugins externalized de outras fontes (não @openclaw/*)
 - Recipes COSMÉTICAS (só se ele pedir)
 - Se backup falhar (filesystem read-only? permissão? disk full?)
 - Se validate.sh retornar > 3 ❌ (instalação muito danificada — pode precisar de atenção manual)

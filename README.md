@@ -1,10 +1,10 @@
 # OpenClaw Update Toolkit
 
-> **Diagnostic-driven recovery toolkit** para estabilizar instalações OpenClaw rodando entre **v2026.4.24 e v2026.4.29**.
+> **Diagnostic-driven recovery + upgrade toolkit** para estabilizar e atualizar instalações OpenClaw entre **v2026.4.24 e v2026.5.2+**.
 > Cole este repo no Claude Code, ele faz tudo pra você.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![OpenClaw](https://img.shields.io/badge/OpenClaw-v2026.4.29-blue)
+![OpenClaw](https://img.shields.io/badge/OpenClaw-v2026.4.24--v2026.5.2%2B-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 
 ---
@@ -46,7 +46,13 @@ Modo **híbrido por severidade** — sem floreio, sem 12 perguntas chatas:
 
 ## 📌 O que esse toolkit resolve
 
-Quando você atualiza o OpenClaw entre versões `2026.4.24 → 2026.4.29`, **vários problemas silenciosos** podem aparecer — desde gateway crash loops até cobranças inesperadas na Anthropic API. Esses problemas raramente estão na documentação oficial e custam horas pra debugar do zero.
+Quando você atualiza o OpenClaw entre versões `2026.4.24 → 2026.5.2+`, **vários problemas silenciosos** podem aparecer — desde gateway crash loops até cobranças inesperadas na Anthropic API, plugin externalization quebrando channels, ou config-zumbi recusando boot. Esses problemas raramente estão na documentação oficial e custam horas pra debugar do zero.
+
+**Novidades v5.2 (Recipes M, N, O):**
+- 🆕 **Web search provider validation strict** — gateway recusa boot na 5.2 se `tools.web.search.provider` aponta pra plugin disabled (config tolerada na 4.x)
+- 🆕 **`chattr +i` + `npm install -g` colidem** — protocolo obrigatório de `chattr -i` pré-upgrade pra não quebrar binário
+- 🆕 **Plugin externalization (`@openclaw/*`)** — WhatsApp/Discord/Voice Call/Brave/etc. saíram do bundled, requer `npm install` direto (NÃO `openclaw plugins install` que é destrutivo)
+- 🆕 **Runbook genérico** `runbooks/upgrade-any-version.md` — decision tree por gap de versões, parametrizado pra qualquer transição
 
 ### Sintomas que você pode estar tendo
 

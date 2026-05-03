@@ -179,11 +179,118 @@ if [[ "$RECENT_BUNDLES" -gt 0 ]]; then
 fi
 echo
 
+# ============================================================================
+# Detecção de versão pra ativar checks v5.2-specific (O, P, Q, R, S)
+# ============================================================================
+INSTALLED_VERSION=$(openclaw --version 2>/dev/null | awk '{print $2}' | head -1)
+INSTALLED_MAJOR=$(echo "$INSTALLED_VERSION" | awk -F. '{print $2}')
+INSTALLED_MINOR=$(echo "$INSTALLED_VERSION" | awk -F. '{print $3}')
+IS_V5_2_PLUS=false
+if [[ -n "$INSTALLED_MAJOR" ]] && { [[ "$INSTALLED_MAJOR" -gt 4 ]] || { [[ "$INSTALLED_MAJOR" -eq 5 ]] && [[ "$INSTALLED_MINOR" -ge 2 ]]; }; }; then
+  IS_V5_2_PLUS=true
+fi
+
+echo "## O. Web search provider validation (v5.2+ strict — Recipe M)"
+WS_PROVIDER=$(jq -r '.tools.web.search.provider // "none"' "$CONFIG" 2>/dev/null)
+echo "tools.web.search.provider: $WS_PROVIDER"
+if [[ "$WS_PROVIDER" != "none" ]]; then
+  # Plugin precisa estar enabled+loaded pro provider funcionar na 5.2
+  PROVIDER_PLUGIN_STATE=$(openclaw plugins list --json 2>/dev/null | jq -r --arg p "$WS_PROVIDER" '.plugins[]? | select(.id == $p) | "enabled=\(.enabled // false) status=\(.status // "missing")"' | head -1)
+  if [[ -z "$PROVIDER_PLUGIN_STATE" ]]; then
+    if [[ "$IS_V5_2_PLUS" == "true" ]]; then
+      echo "❌ provider '$WS_PROVIDER' aponta pra plugin AUSENTE — gateway vai recusar boot na 5.2+ — Recipe M urgente"
+    else
+      echo "⚠️ provider '$WS_PROVIDER' aponta pra plugin ausente (tolerado em <5.2, blocker em 5.2+) — Recipe M preventiva"
+    fi
+  elif [[ "$PROVIDER_PLUGIN_STATE" == "enabled=false"* ]]; then
+    if [[ "$IS_V5_2_PLUS" == "true" ]]; then
+      echo "❌ plugin '$WS_PROVIDER' DISABLED — Recipe M (trocar pra 'duckduckgo' ou enable plugin)"
+    else
+      echo "⚠️ plugin '$WS_PROVIDER' disabled (tolerado pre-5.2, blocker em 5.2+) — Recipe M preventiva antes de upgrade"
+    fi
+  else
+    echo "✅ plugin '$WS_PROVIDER' loaded ($PROVIDER_PLUGIN_STATE)"
+  fi
+else
+  echo "✅ web_search provider não configurado (sem risco)"
+fi
+echo
+
+echo "## P. chattr +i no node_modules global (Recipe N — pré-upgrade)"
+IMMUTABLE_COUNT=$(find /usr/lib/node_modules/openclaw -type f -exec lsattr {} \; 2>/dev/null | grep -c "^----i" || echo 0)
+echo "Arquivos imutáveis em /usr/lib/node_modules/openclaw: $IMMUTABLE_COUNT"
+if [[ "$IMMUTABLE_COUNT" -gt 0 ]]; then
+  echo "⚠️ Recipe N OBRIGATÓRIA antes de qualquer 'npm install -g openclaw@<v>' — chattr +i bloqueia npm rm e quebra binário no meio"
+  find /usr/lib/node_modules/openclaw -type f -exec lsattr {} \; 2>/dev/null | grep "^----i" | awk '{print "  ", $NF}' | head -5
+else
+  echo "✅ sem imutáveis bloqueando — npm install -g pode rodar livre"
+fi
+echo
+
+echo "## Q. Plugin externalization @openclaw/* (v5.2+ — Recipe O)"
+EXT_DIR=/root/.openclaw/npm/node_modules/@openclaw
+if [[ -d "$EXT_DIR" ]]; then
+  EXT_PLUGINS=$(ls "$EXT_DIR" 2>/dev/null | tr '\n' ' ')
+  echo "Externalized plugins instalados: ${EXT_PLUGINS:-(nenhum)}"
+  # Verificar se algum config aponta pra plugin ausente fisicamente
+  for cfg_plugin in $(jq -r '.plugins.entries // {} | keys[]?' "$CONFIG" 2>/dev/null); do
+    if [[ "$cfg_plugin" =~ ^(whatsapp|discord|voice-call|memory-lancedb|matrix|mattermost|brave|acpx|diffs|google-chat|line|microsoft-teams)$ ]]; then
+      if [[ ! -d "$EXT_DIR/$cfg_plugin" ]] && [[ ! -d "/usr/lib/node_modules/openclaw/dist/extensions/$cfg_plugin" ]]; then
+        if [[ "$IS_V5_2_PLUS" == "true" ]]; then
+          echo "❌ '$cfg_plugin' configurado mas AUSENTE — Recipe O (npm install @openclaw/$cfg_plugin)"
+        else
+          echo "ℹ️ '$cfg_plugin' bundled — sem ação necessária na versão atual"
+        fi
+      fi
+    fi
+  done
+else
+  if [[ "$IS_V5_2_PLUS" == "true" ]]; then
+    echo "ℹ️ /root/.openclaw/npm/ ausente — sem plugins externalized instalados (OK se não usa channels externalized)"
+  else
+    echo "ℹ️ /root/.openclaw/npm/ ausente — esperado em pré-5.2"
+  fi
+fi
+echo
+
+echo "## R. meta.lastTouchedVersion (doctor repair trigger awareness)"
+LTV=$(jq -r '.meta.lastTouchedVersion // "unset"' "$CONFIG" 2>/dev/null)
+echo "lastTouchedVersion: $LTV"
+echo "installed: $INSTALLED_VERSION"
+if [[ "$LTV" == "$INSTALLED_VERSION" ]]; then
+  echo "✅ doctor repair já executou pra versão atual"
+elif [[ "$LTV" == "unset" ]]; then
+  echo "⚠️ lastTouchedVersion ausente — doctor pode disparar 'one-time install repair' no próximo restart (revisar config diff antes/depois)"
+else
+  echo "ℹ️ lastTouchedVersion ($LTV) ≠ installed ($INSTALLED_VERSION) — doctor 'install repair' vai disparar no próximo restart se versão >= 5.2"
+fi
+echo
+
+echo "## S. Schema 5.2 — agentRuntime.id status"
+RT_ID=$(openclaw config get agentRuntime.id 2>/dev/null | tail -1)
+if echo "$RT_ID" | grep -qiE "not found|undefined"; then
+  if [[ "$IS_V5_2_PLUS" == "true" ]]; then
+    echo "✅ agentRuntime.id ausente — esperado em 5.2+ (schema mudou; conceito virou plugin-based)"
+  else
+    echo "⚠️ agentRuntime.id ausente em pré-5.2 — config antiga ou customizada"
+  fi
+else
+  if [[ "$IS_V5_2_PLUS" == "true" ]]; then
+    echo "ℹ️ agentRuntime.id ainda configurado em 5.2+ ($RT_ID) — pode ser ignorado pelo gateway, sem impacto"
+  else
+    echo "✅ agentRuntime.id: $RT_ID"
+  fi
+fi
+echo
+
 echo "---"
 echo
 echo "## Summary — quais recipes aplicar?"
 echo
-echo "Veja \`docs/recovery-guide.md\` para detalhes de cada recipe."
+echo "Veja \`docs/recovery-guide.md\` ou \`runbooks/upgrade-any-version.md\` (pra upgrades)."
 echo "Priorize por severidade: **D > B > G > E > F > C > H > L > K > J**"
+if [[ "$IS_V5_2_PLUS" == "true" ]] || [[ -n "$INSTALLED_VERSION" ]]; then
+  echo "Recipes v5.2-specific: **N (sempre pré-upgrade) > M (web_search) > O (plugin externalization)**"
+fi
 echo
 echo "_Diagnostic completo. Próximo passo: revisar output + autorizar recipes específicas via Claude Code._"

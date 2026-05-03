@@ -5,6 +5,43 @@ Todas as mudanças notáveis deste toolkit serão documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versionamento independente do OpenClaw — kit segue semver próprio.
 
+## [0.4.0] — 2026-05-03 (Phase 4 — v5.2 awareness)
+
+### Adicionado
+- **3 recipes novas** cobrindo pitfalls não-documentados da v2026.5.2:
+  - `recipes/M-web-search-validation-strict.md` — `tools.web.search.provider` validação strict introduzida em v5.0+ (#53092). Config-zumbi com plugin disabled bloqueia boot. Fix: trocar pra `duckduckgo` (bundled, zero-config) ou outros providers válidos
+  - `recipes/N-chattr-vs-npm-install.md` — protocolo obrigatório `chattr -i` pré-`npm install -g openclaw@<v>`. Sem isso, npm `rm` falha com "Operation not permitted" e binário openclaw fica QUEBRADO no meio do install. Aplica-se a TODAS as versões com Recipe D ou Recipe J ativas
+  - `recipes/O-plugin-externalization-scoped.md` — instalar plugins externalized `@openclaw/*` (WhatsApp/Discord/Voice Call/Brave/etc.) via `npm install` direto. `openclaw plugins install` é DESTRUTIVO entre packages scoped (cada install remove o anterior)
+- **Runbook genérico** `runbooks/upgrade-any-version.md` (substitui efetivamente `upgrade-from-v24-to-v29.md`):
+  - Decision tree automático por gap de versões (current vs target)
+  - Parametrizado pra qualquer transição entre v2026.4.24 e v2026.5.2+
+  - Phases 0-7 zero-downtime + auto-rollback embutido
+  - Tabela de recipes obrigatórias por gap
+- **3 lessons sincronizadas** do upstream privado (sanitizadas):
+  - `lessons/2026-04-20-openclaw-gateway-fratricide-issue-62028.md` — origem do monkey-patch fratricide (Recipe D)
+  - `lessons/2026-05-01-claude-cli-plugin-telegram-duplicate-poller.md` — versão completa do MCP duplicate poller (Recipe G); substitui versão anterior mais curta
+  - `lessons/2026-05-03-openclaw-v5.2-upgrade-pitfalls.md` — 3 pitfalls da v5.2 com recovery completo
+
+### Modificado
+- **`scripts/diagnostic.sh`** — 5 seções novas (O-S):
+  - O. Web search provider validation (v5.2+ strict)
+  - P. `chattr +i` no node_modules global (Recipe N awareness)
+  - Q. Plugin externalization `@openclaw/*` (Recipe O coverage)
+  - R. `meta.lastTouchedVersion` (doctor "install repair" trigger)
+  - S. Schema 5.2 — `agentRuntime.id` removed status
+- **`scripts/validate.sh`** — 4 invariants novos (11-14, version-aware, total agora 14):
+  - 11. `tools.web.search.provider` plugin instalado+enabled
+  - 12. Sem `chattr +i` bloqueando node_modules global (warn pré-upgrade)
+  - 13. Plugins externalizados configurados estão fisicamente presentes (skip se < 5.2)
+  - 14. `meta.lastTouchedVersion == installed` (skip se < 5.2)
+- **README.md** — scope expandido pra v2026.4.24 → v2026.5.2+, badge atualizado, seção "Novidades v5.2" adicionada
+
+### Removido
+- `lessons/2026-05-01-mcp-duplicate-poller.md` — versão anterior mais curta substituída pela completa do upstream
+
+### Sustentabilidade
+- Sanitização aplicada em todas as 3 lessons sincronizadas: tokens (sk-ant-*, ghp_*, AIza*), telefones, WhatsApp group IDs, channel IDs Discord, emails, IPs Tailscale (100.*), IPs públicos (187.*)
+
 ## [0.3.0] — 2026-05-01 (Phase 3)
 
 ### Adicionado
