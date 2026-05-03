@@ -5,6 +5,14 @@ Todas as mudanças notáveis deste toolkit serão documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versionamento independente do OpenClaw — kit segue semver próprio.
 
+## [0.4.1] — 2026-05-03 (graph-memory JSON mode fix)
+
+### Adicionado
+- **Recipe P** (`recipes/P-graph-memory-json-mode.md`) — fix pra bug do plugin `graph-memory` que falha `JSON.parse` em ~5-10% dos turns quando o LLM (Gemini 2.5-flash-lite especialmente, mas também outros) wrappa resposta em ` ```json...``` ` markdown blocks. Solução: forçar `response_format: { type: "json_object" }` no body do fetch contra endpoint OpenAI-compatible. Patch idempotente (Python regex), aplicável a todas versões do graph-memory plugin (1.x+) com provider OpenAI-compatible (Gemini, OpenAI, Mistral, OpenRouter, Ollama, LM Studio, etc).
+
+### Notas
+- Bug **pré-existente** (não introduzido pela v5.2). Detectado durante smoke test pós-upgrade. RECALL não é afetado (lê graph existente); apenas EXTRACT degrada (~10% dos turns não viram nodes/edges). Severidade MÉDIA.
+
 ## [0.4.0] — 2026-05-03 (Phase 4 — v5.2 awareness)
 
 ### Adicionado

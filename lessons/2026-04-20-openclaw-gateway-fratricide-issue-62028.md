@@ -24,7 +24,7 @@ related_lessons: [2026-04-01-dep0040-punycode, 2026-04-19-boost-stacking-and-fak
 
 ## ⚠️ Nuance crítica: Issue #62028 está CLOSED mas o bug persiste (verificado 2026-04-20 pós-fix)
 
-**Não confie no status do GitHub Issue pra decidir upgrade.** Forge validou:
+**Não confie no status do GitHub Issue pra decidir upgrade.** a secondary reviewer agent validou:
 - Issue #62028 foi fechado em 2026-04-06 no GitHub (antes mesmo da v2026.4.5 ser released — suspeito)
 - Issue está **LOCKED** (não aceita mais comentários)
 - v2026.4.15 changelog menciona fix pra **Issue #67436 (SIGUSR1 loop)** — **bug diferente**, não o fratricide
@@ -210,7 +210,7 @@ systemctl restart openclaw-gateway
 
 ## Convenções institucionais derivadas
 
-Adicionar ao CLAUDE.md do memoria-nox na seção Convenções:
+Adicionar ao CLAUDE.md do your memory tool repo na seção Convenções:
 
 - **Antes de `npm update -g openclaw`:** verificar Issue #62028 status. Se aberto, re-aplicar monkey-patch em `restart-stale-pids-*.js`. Script em `shared/lessons/2026-04-20-openclaw-gateway-fratricide-issue-62028.md`.
 - **Wrapper `/usr/local/bin/openclaw-gateway-wrapper` deve ser imutável (`chattr +i`)** — evita que installer sobrescreva. Para editar: `chattr -i`, editar, `chattr +i`.
@@ -242,19 +242,19 @@ Adicionar ao CLAUDE.md do memoria-nox na seção Convenções:
 
 ## Entidades identificadas (para KG)
 
-- **Projetos**: OpenClaw (gateway distribuído), nox-mem v3.4
+- **Projetos**: OpenClaw (gateway distribuído), memory-tool v3.4
 - **Componentes**: openclaw-gateway (systemd service), openclaw binary, cleanStaleGatewayProcessesSync (função), restart subsystem, emitGatewayRestart (função), health-probe.sh, restartGatewayProcessWithFreshPid
 - **Conceitos**: fratricide bug, monkey-patch, systemd Type=simple, fork-and-die pattern, orphan child, supervisor detection, StartLimitBurst, config hot-reload, service-mode marker
 - **Versões**: 2026.3.31 (last stable), 2026.4.5 (regression introduced), 2026.4.14 (current, bugged), 2026.4.15 (latest released, no fix)
 - **Issues**: #62028 (main), #5533 (commands.restart), #25443 (NO_RESPAWN), #52922 (lock conflict), #20536 (supervisor detection), PR #42544
 - **Agentes usados**: devops-incident-responder, debugger, sre-engineer, researcher
-- **Pessoas**: Toto (owner), Forge (code review após fix)
+- **Pessoas**: operador (owner), a secondary reviewer agent (code review após fix)
 - **Arquivos**: wrapper, restart-stale-pids-*.js, openclaw.json, health-probe.sh, restart-CjpAouST.js, gateway-cli-DhgfjzZ0.js
 
 ## Pendências pós-fix
 
 1. [ ] Abrir comentário no Issue #62028 do GitHub reportando a reprodução em VPS/systemd Type=simple com OPENCLAW_SERVICE_MARKER set + detalhes do monkey-patch
 2. [ ] Adicionar monitor de versão npm do openclaw — se sair 2026.4.16+ verificar se Issue #62028 foi fechado
-3. [ ] Forge review do monkey-patch (code review da mudança no dist/)
+3. [ ] a secondary reviewer agent review do monkey-patch (code review da mudança no dist/)
 4. [ ] Incluir script de re-aplicação do monkey-patch em `/root/.openclaw/scripts/reapply-gateway-fix.sh` pra facilitar após npm updates
 5. [ ] Considerar pin da versão openclaw no package-lock se houver (ou equivalente) pra evitar auto-update

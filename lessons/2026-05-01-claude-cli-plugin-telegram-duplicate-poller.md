@@ -1,7 +1,7 @@
 # Lesson — Claude CLI plugin MCP gera duplicate poller no Bot Telegram
 
 **Data:** 2026-05-01
-**Detectado em:** sessão de troubleshooting com Toto, ~14:00-15:25 BRT
+**Detectado em:** sessão de troubleshooting com o operador, ~14:00-15:25 (timezone local)
 **Severidade:** alta (instabilidade recorrente, slash commands quebrados, zumbis 96% CPU)
 **Status:** resolvido. Causa raiz tratada. Cross-reference com incident similar de 2026-03-31.
 
@@ -42,7 +42,7 @@ Conflits surgem **minutos depois** de cada `claude live session start` (porque o
 ```bash
 grep -iE "telegram|tmux.*bot" /root/.bash_history
 ```
-Se mostrar `claude --channels 'plugin:telegram@...'` ou `tmux new -s telegram-bot`, é evidência forte que Toto (ou agente) ativou o plugin manualmente em algum momento.
+Se mostrar `claude --channels 'plugin:telegram@...'` ou `tmux new -s telegram-bot`, é evidência forte que o operador (ou agente) ativou o plugin manualmente em algum momento.
 
 ### Nível 4 — TCP sockets ativos
 ```bash

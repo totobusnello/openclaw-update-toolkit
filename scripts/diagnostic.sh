@@ -36,7 +36,7 @@ echo "## A. Versão e processo"
 openclaw --version 2>/dev/null || echo "openclaw CLI ausente"
 echo
 echo "Processos openclaw ativos:"
-ps -ef | grep -i openclaw | grep -vE 'grep|nox-mem-watch' | awk '{print $2, $3, $9, $10}' || echo "(nenhum)"
+ps -ef | grep -i openclaw | grep -v grep | awk '{print $2, $3, $9, $10}' || echo "(nenhum)"
 echo
 echo "Service state:"
 systemctl is-active openclaw-gateway 2>/dev/null || echo "(service ausente)"
