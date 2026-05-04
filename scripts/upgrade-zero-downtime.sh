@@ -353,7 +353,7 @@ systemd-run --unit=openclaw-staging \
   -- node "$STAGING_MODULES/node_modules/openclaw/dist/index.js" \
        gateway run --bind loopback --port "$STAGING_PORT" \
        2>/dev/null || \
-  { echo "    systemd-run failed — trying foreground staging..."; STAGING_FOREGROUND=1; }
+  { echo "    systemd-run failed — trying foreground staging..."; }
 
 # Wait for staging gateway to come up
 echo "    waiting for staging gateway on :$STAGING_PORT..."
@@ -590,8 +590,9 @@ if [[ -s "$BACKUP_DIR/external-plugins.snapshot" ]]; then
     MISSING=$(comm -23 <(echo "$EXPECTED_PLUGINS") <(echo "$POST_SWAP_PLUGINS"))
     if [[ -n "$MISSING" ]]; then
       echo "    MISSING plugins detected — restoring via npm install:"
-      cd /root/.openclaw/npm && npm install $(echo "$MISSING" | sed 's|^|@openclaw/|' | tr '\n' ' ') 2>&1 | tail -5
-      cd - >/dev/null
+      # Use array to safely pass multiple package names without word-splitting issues (shellcheck SC2046)
+      mapfile -t MISSING_PKGS < <(echo "$MISSING" | sed 's|^|@openclaw/|')
+      ( cd /root/.openclaw/npm && npm install "${MISSING_PKGS[@]}" 2>&1 | tail -5 )
     fi
   else
     echo "    @openclaw/* plugin set intact: $(echo "$POST_SWAP_PLUGINS" | tr '\n' ' ')"
