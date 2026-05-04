@@ -178,26 +178,60 @@ else
   : > "$BACKUP_DIR/external-plugins.snapshot"
 fi
 
-# 0z. Production config lock (lição 2026-05-04: staging gateway contamina prod config)
-# Mesmo com OPENCLAW_WORKSPACE=/tmp/openclaw-staging-workspace, staging gateway escreveu
-# em /root/.openclaw/openclaw.json (lastTouchedVersion + plugins.entries.duckduckgo + plugins.allow).
-# Defesa: chattr +i + SHA snapshot + restore atômico (trap garante unlock mesmo em erro).
-echo "[0z] Pre-staging config snapshot + lock..."
+# 0z. Production config + channel credentials lock
+# (lição 2026-05-04: staging gateway contamina prod config + ROUBA SESSÃO BAILEYS DO WHATSAPP)
+#
+# CONTEXT: WhatsApp Web só permite 1 device-key por vez. Se staging gateway carregar plugin
+# whatsapp e usar os MESMOS creds em /root/.openclaw/credentials/whatsapp/default/,
+# Baileys vê 2 conexões com mesmo identity → invalida sessão → user precisa reescanear QR.
+# Aconteceu em 2026-05-04 08:34 — Toto teve que relinkar WhatsApp depois.
+#
+# DEFESA EM 3 CAMADAS:
+#   (a) chattr +i nos creds dirs de TODOS channels (whatsapp, discord, telegram) → write fails
+#   (b) OPENCLAW_STATE_DIR override no staging spawn → resolveOAuthDir aponta /tmp não /root
+#   (c) SHA snapshot + auto-restore como antes (defesa final)
+echo "[0z] Pre-staging snapshot + lock (config + channel credentials)..."
 CONFIG_SHA_PRE=$(sha256sum /root/.openclaw/openclaw.json | awk '{print $1}')
 cp /root/.openclaw/openclaw.json "$BACKUP_DIR/openclaw.json.pre-staging"
-echo "    sha256 pre-staging: $CONFIG_SHA_PRE"
+echo "    config sha256: $CONFIG_SHA_PRE"
+
+# Snapshot de credenciais por canal (creds.json + chaves) — defesa contra wipe acidental
+CHANNEL_CRED_SNAPSHOT="$BACKUP_DIR/channel-creds-snapshot.tar.gz"
+if [[ -d /root/.openclaw/credentials ]]; then
+  tar -czf "$CHANNEL_CRED_SNAPSHOT" -C /root/.openclaw credentials 2>/dev/null
+  echo "    channel creds snapshot: $CHANNEL_CRED_SNAPSHOT ($(du -k "$CHANNEL_CRED_SNAPSHOT" | awk '{print $1}')K)"
+fi
+
+# Lista de creds files que precisam lock — incluindo channel-specific dirs
+CREDS_LOCKED_FILES=()
+for f in /root/.openclaw/openclaw.json \
+         /root/.openclaw/credentials/whatsapp/default/creds.json \
+         /root/.openclaw/credentials/whatsapp/default/creds.json.bak \
+         /root/.openclaw/credentials/discord-pairing.json \
+         /root/.openclaw/credentials/discord-default-allowFrom.json \
+         /root/.openclaw/credentials/telegram-pairing.json \
+         /root/.openclaw/credentials/telegram-default-allowFrom.json; do
+  if [[ -f "$f" ]]; then
+    CREDS_LOCKED_FILES+=("$f")
+  fi
+done
 
 # Idempotent — safe to call manually OR via trap. Does NOT exit script (caller decides).
 CONFIG_UNLOCK_DONE=0
 unlock_and_restore_config() {
   [[ "$CONFIG_UNLOCK_DONE" == "1" ]] && return 0
   echo ""
-  echo "━━━ CLEANUP: unlock + verify production config ━━━"
+  echo "━━━ CLEANUP: unlock + verify production state ━━━"
   systemctl stop openclaw-staging 2>/dev/null || true
-  if lsattr /root/.openclaw/openclaw.json 2>/dev/null | awk '{print $1}' | grep -q 'i'; then
-    chattr -i /root/.openclaw/openclaw.json 2>/dev/null || true
-    echo "    chattr -i removed from production config"
-  fi
+  # Unlock all creds files
+  local unlocked=0
+  for f in "${CREDS_LOCKED_FILES[@]}"; do
+    if lsattr "$f" 2>/dev/null | awk '{print $1}' | grep -q 'i'; then
+      chattr -i "$f" 2>/dev/null && unlocked=$((unlocked+1)) || true
+    fi
+  done
+  echo "    chattr -i removed from $unlocked locked file(s)"
+  # Verify production config didn't drift
   local sha_post
   sha_post=$(sha256sum /root/.openclaw/openclaw.json | awk '{print $1}')
   if [[ "$CONFIG_SHA_PRE" != "$sha_post" ]]; then
@@ -205,14 +239,29 @@ unlock_and_restore_config() {
     cp "$BACKUP_DIR/openclaw.json.pre-staging" /root/.openclaw/openclaw.json
     echo "    restored from $BACKUP_DIR/openclaw.json.pre-staging"
   else
-    echo "    production config SHA intact — no restore needed"
+    echo "    production config SHA intact"
+  fi
+  # Verify whatsapp creds didn't get wiped (would break baileys session)
+  local wa_creds=/root/.openclaw/credentials/whatsapp/default/creds.json
+  if [[ -d /root/.openclaw/credentials/whatsapp/default ]] && [[ ! -f "$wa_creds" ]]; then
+    echo "    WARN: whatsapp creds.json missing — restoring from snapshot tarball"
+    if [[ -f "$CHANNEL_CRED_SNAPSHOT" ]]; then
+      tar -xzf "$CHANNEL_CRED_SNAPSHOT" -C /root/.openclaw 2>/dev/null && \
+        echo "    restored creds.json from $CHANNEL_CRED_SNAPSHOT"
+    fi
+  else
+    [[ -f "$wa_creds" ]] && echo "    whatsapp creds.json intact"
   fi
   CONFIG_UNLOCK_DONE=1
 }
 trap 'unlock_and_restore_config' EXIT
 
-chattr +i /root/.openclaw/openclaw.json
-echo "    chattr +i applied — production config locked during staging"
+# Apply chattr +i to all sensitive files
+locked=0
+for f in "${CREDS_LOCKED_FILES[@]}"; do
+  chattr +i "$f" 2>/dev/null && locked=$((locked+1)) || true
+done
+echo "    chattr +i applied to $locked file(s) — write blocked during staging"
 
 echo "[0] PRE-FLIGHT COMPLETE — proceeding to staging"
 rm -rf "$TARBALL_DIR"
@@ -280,10 +329,24 @@ cat > "$STAGING_WORKSPACE/openclaw.json" <<STAGINGCFG
 }
 STAGINGCFG
 
-echo "[1d] Starting staging gateway (systemd-run, isolated)..."
+# Pre-create empty staging credentials dir so plugin-sdk's resolveOAuthDir
+# (= $STATE_DIR/credentials) finds an empty path → channels see "no creds" → no auto-connect
+mkdir -p "$STAGING_WORKSPACE/credentials"
+mkdir -p "$STAGING_WORKSPACE/agents/staging-test/agent"
+
+echo "[1d] Starting staging gateway (systemd-run, ISOLATED state dir)..."
+# OPENCLAW_STATE_DIR override (lição 2026-05-04): plugin-sdk paths-C1_Y0cDn.js usa
+# OPENCLAW_STATE_DIR env como override do default ~/.openclaw. Sem isso, resolveOAuthDir
+# retornava /root/.openclaw/credentials e staging gateway lia creds DE PRODUÇÃO →
+# tentava conectar WhatsApp Web em paralelo com prod → Baileys invalidava sessão.
+# Com este override staging vê /tmp/openclaw-staging-workspace/credentials/ (vazio) →
+# channels reportam "not configured" e NÃO tentam auto-connect.
+# OPENCLAW_CONFIG_PATH garante que staging lê o openclaw.json ISOLADO em $STAGING_WORKSPACE.
 systemd-run --unit=openclaw-staging \
   --property=Environment=IS_SANDBOX=1 \
   --property=Environment=OPENCLAW_WORKSPACE="$STAGING_WORKSPACE" \
+  --property=Environment=OPENCLAW_STATE_DIR="$STAGING_WORKSPACE" \
+  --property=Environment=OPENCLAW_CONFIG_PATH="$STAGING_WORKSPACE/openclaw.json" \
   --property=EnvironmentFile=/root/.openclaw/.env \
   --property=StandardOutput=journal \
   --property=StandardError=journal \
