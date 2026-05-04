@@ -688,7 +688,7 @@ check "@openclaw/discord present in /root/.openclaw/npm/node_modules/@openclaw/ 
 check "@openclaw/whatsapp present in /root/.openclaw/npm/node_modules/@openclaw/ (pitfall #3 5.2)" \
   "test -d /root/.openclaw/npm/node_modules/@openclaw/whatsapp"
 check "channels loaded count >= 4 (slack+telegram bundled + discord+whatsapp external)" \
-  "[ \$(openclaw plugins list --json | jq '[.plugins[]? | select(.kind==\"channel\" and (.enabled // false) == true)] | length') -ge 4 ]"
+  "[ \$(openclaw plugins list --json | jq '[.plugins[]? | select((.id | test(\"^(slack|telegram|discord|whatsapp)$\")) and (.enabled // false) == true and .status == \"loaded\")] | length') -ge 4 ]"
 
 # Phase 6 — auto-remediate config drift if detected
 if [[ $FAIL -ne 0 ]]; then
