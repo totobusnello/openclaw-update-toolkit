@@ -310,10 +310,6 @@ mkdir -p "$STAGING_WORKSPACE/agents/staging-test/agent"
 cat > "$STAGING_WORKSPACE/openclaw.json" <<STAGINGCFG
 {
   "agents": {
-    "staging-test": {
-      "persona": "staging smoke-test agent — DO NOT USE FOR REAL CHANNELS",
-      "model": { "primary": "anthropic/claude-sonnet-4-6", "fallbacks": ["gemini/gemini-2.5-flash-lite"] }
-    },
     "defaults": {
       "model": {
         "primary": "anthropic/claude-sonnet-4-6",
@@ -322,7 +318,7 @@ cat > "$STAGING_WORKSPACE/openclaw.json" <<STAGINGCFG
       "compaction": { "keepRecentTokens": 8000 }
     }
   },
-  "gateway": { "port": $STAGING_PORT, "reload": { "mode": "off" } },
+  "gateway": { "mode": "local", "port": $STAGING_PORT, "reload": { "mode": "off" } },
   "commands": { "restart": false },
   "discovery": { "mdns": { "mode": "off" } },
   "plugins": {}
