@@ -8,6 +8,7 @@ Versionamento independente do OpenClaw — kit segue semver próprio.
 ## [Unreleased]
 
 ### Adicionado
+- **Lesson** [`lessons/2026-05-06-whatsapp-creds-chattr-drift.md`](lessons/2026-05-06-whatsapp-creds-chattr-drift.md) — Primeiro run do smoke-test-whatsapp.sh em produção (recém-criado) revelou que /root/.openclaw/credentials/whatsapp/default/creds.json estava sem chattr +i — violação direta da lição 2026-05-04 (orches
 - **Lesson** [`lessons/2026-05-03-graph-memory-json-mode.md`](lessons/2026-05-03-graph-memory-json-mode.md) — Plugin graph-memory usando Gemini 2.5-flash-lite falha ~5-10% das extrações com SyntaxError: Unexpected non-whitespace character after JSON at position 416. Root cause: Gemini frequentemente wrappa JSON em markdown  json...  blocks mesmo com temperature: 0.1 e "JSON only" system 
 - **Lesson** [`lessons/2026-05-04-followup-5.3.1-validation-schema-channels.md`](lessons/2026-05-04-followup-5.3.1-validation-schema-channels.md) — Continuação da sessão 2026-05-04 cobrindo 4 tópicos não capturados nas 3 lessons anteriores:
 - **Lesson** [`lessons/2026-05-04-noxmem-429-false-auto-heals.md`](lessons/2026-05-04-noxmem-429-false-auto-heals.md) — Canary semantic disparava "auto-healed" 5×/dia em horários alinhados com cron /30. Hipótese inicial: processo dropping sem supervisor. Realidade: nox-mem-api ficou up o dia inteiro (NRestarts=0). 429 transitório do Gemini batia em geminiEmbedQuery que não tinha retry — só embedBa
