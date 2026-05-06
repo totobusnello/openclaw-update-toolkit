@@ -148,8 +148,7 @@ openclaw-update-toolkit/
 │   ├── upgrade-from-v24-to-v29.md
 │   ├── recovery-from-fratricide-loop.md
 │   └── recovery-from-cost-explosion.md
-└── lessons/                        # Insights por incident (em breve)
-    └── 2026-05-01-mcp-duplicate-poller.md
+└── lessons/                        # 14 lições por incident — fonte de truth
 ```
 
 ---
