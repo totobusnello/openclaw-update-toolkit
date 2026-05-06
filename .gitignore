@@ -16,3 +16,6 @@ Thumbs.db
 
 # Trash dirs (durante operação dos scripts)
 _trash/
+
+# Claude Code workspace local (per-clone, não versionar)
+.claude/
