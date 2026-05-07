@@ -8,6 +8,7 @@ Versionamento independente do OpenClaw — kit segue semver próprio.
 ## [Unreleased]
 
 ### Adicionado
+- **Lesson** [`lessons/2026-05-07-openclaw-v5.6-upgrade-completed.md`](lessons/2026-05-07-openclaw-v5.6-upgrade-completed.md) — (sem TL;DR — ver lesson para detalhes)
 - **Lesson** [`lessons/2026-05-06-whatsapp-creds-chattr-drift.md`](lessons/2026-05-06-whatsapp-creds-chattr-drift.md) — Primeiro run do smoke-test-whatsapp.sh em produção (recém-criado) revelou que /root/.openclaw/credentials/whatsapp/default/creds.json estava sem chattr +i — violação direta da lição 2026-05-04 (orches
 - **Lesson** [`lessons/2026-05-03-graph-memory-json-mode.md`](lessons/2026-05-03-graph-memory-json-mode.md) — Plugin graph-memory usando Gemini 2.5-flash-lite falha ~5-10% das extrações com SyntaxError: Unexpected non-whitespace character after JSON at position 416. Root cause: Gemini frequentemente wrappa JSON em markdown  json...  blocks mesmo com temperature: 0.1 e "JSON only" system 
 - **Lesson** [`lessons/2026-05-04-followup-5.3.1-validation-schema-channels.md`](lessons/2026-05-04-followup-5.3.1-validation-schema-channels.md) — Continuação da sessão 2026-05-04 cobrindo 4 tópicos não capturados nas 3 lessons anteriores:

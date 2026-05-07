@@ -148,7 +148,7 @@ openclaw-update-toolkit/
 │   ├── upgrade-from-v24-to-v29.md
 │   ├── recovery-from-fratricide-loop.md
 │   └── recovery-from-cost-explosion.md
-└── lessons/                        # 15 lições por incident — fonte de truth
+└── lessons/                        # 16 lições por incident — fonte de truth
 ```
 
 ---
