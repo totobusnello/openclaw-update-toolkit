@@ -1,10 +1,10 @@
 # OpenClaw Update Toolkit
 
-> **Diagnostic-driven recovery + upgrade toolkit** para estabilizar e atualizar instalações OpenClaw entre **v2026.4.24 e v2026.5.2+**.
+> **Diagnostic-driven recovery + upgrade toolkit** para estabilizar e atualizar instalações OpenClaw entre **v2026.4.24 e v2026.5.6+**.
 > Cole este repo no Claude Code, ele faz tudo pra você.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-![OpenClaw](https://img.shields.io/badge/OpenClaw-v2026.4.24--v2026.5.2%2B-blue)
+![OpenClaw](https://img.shields.io/badge/OpenClaw-v2026.4.24--v2026.5.6%2B-blue)
 ![Status](https://img.shields.io/badge/status-active-success)
 
 ---
@@ -46,7 +46,19 @@ Modo **híbrido por severidade** — sem floreio, sem 12 perguntas chatas:
 
 ## 📌 O que esse toolkit resolve
 
-Quando você atualiza o OpenClaw entre versões `2026.4.24 → 2026.5.2+`, **vários problemas silenciosos** podem aparecer — desde gateway crash loops até cobranças inesperadas na Anthropic API, plugin externalization quebrando channels, ou config-zumbi recusando boot. Esses problemas raramente estão na documentação oficial e custam horas pra debugar do zero.
+Quando você atualiza o OpenClaw entre versões `2026.4.24 → 2026.5.6+`, **vários problemas silenciosos** podem aparecer — desde gateway crash loops até cobranças inesperadas na Anthropic API, plugin externalization quebrando channels, scripts cooperantes selecionando o chunk errado de bundle splittado, ou config-zumbi recusando boot. Esses problemas raramente estão na documentação oficial e custam horas pra debugar do zero.
+
+**Novidades v5.6 (corretivo crítico — pula v5.5):**
+- 🆕 **`doctor --fix` revert do v5.5** — v5.5 reescrevia rotas `openai-codex/*` → `openai/*`, quebrando setups OAuth-only GPT-5.5. v5.6 reverte. **Estratégia: pular v5.5 deliberadamente** se vier de v5.4
+- 🆕 **Bundle chunk splitting** — `restart-stale-pids-*.js` agora ships em 2 arquivos (stub + main). Scripts que selecionam via `ls ... | head -1` pegam o stub errado. Fix: `xargs grep -lF "<symbol>" | head -1` (seleção por conteúdo)
+- 🆕 **Endpoint `/api/health` → `/health`** — apenas `/health` retorna JSON `{"ok":true,"status":"live"}`. Os paths `/system/health`, `/gateway/health`, `/v1/health` retornam HTML do dashboard, não JSON
+- 🆕 **Web fetch timeout cleanup (#78439)** — Gateway tool lanes não vazam mais em fetches que timeout
+
+**Novidades v5.4:**
+- 🆕 **Doctor expandido** — agora toca em `sessions store`, `auth.profiles`, `plugins.allow` (cobertura ampliada). `doctor --fix` em prod com plugins reais gera falsos positivos de "stale plugin reference" — usar apenas `doctor` (diagnostic) sem `--fix`
+- 🆕 **`compaction_loop_persisted` guard** — previne runaway pós-compaction (default windowSize=3, não desabilitar)
+- 🆕 **Active Memory bounded recall** — query usa metadata estruturada, não search string solta
+- 🆕 **graph-memory custom precisa `dist/`** — discovery 5.4 endurecido drop plugins sem `dist/index.js` compilado. Fix: `bun build` + manifest update
 
 **Novidades v5.2 (Recipes M, N, O):**
 - 🆕 **Web search provider validation strict** — gateway recusa boot na 5.2 se `tools.web.search.provider` aponta pra plugin disabled (config tolerada na 4.x)
@@ -210,8 +222,8 @@ Esse toolkit é **mantido ativamente** sincronizado com uma instalação OpenCla
 
 - **Versionamento:** `CHANGELOG.md` lista atualizações por data
 - **Trigger de update:** após qualquer incident documentado em produção
-- **Compatibilidade:** v2026.4.29 é o foco principal. Versões anteriores cobertas em runbooks específicos
-- **Quando OpenClaw shipar v2026.4.30+:** algumas Recipes podem ficar obsoletas. Vamos atualizar.
+- **Compatibilidade:** v2026.5.6 é o foco principal. Releases entre v2026.4.24 e v2026.5.6 cobertas pelas recipes + runbooks; versões anteriores cobertas em runbooks específicos
+- **Quando OpenClaw shipar v2026.5.7+:** algumas Recipes podem ficar obsoletas. Vamos atualizar.
 
 ---
 
