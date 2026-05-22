@@ -8,6 +8,10 @@ Versionamento independente do OpenClaw — kit segue semver próprio.
 ## [Unreleased]
 
 ### Adicionado
+- **Lesson** [`lessons/2026-05-08-09-invariant-upgrade-and-health-probe-race.md`](lessons/2026-05-08-09-invariant-upgrade-and-health-probe-race.md) — (sem TL;DR — ver lesson para detalhes)
+- **Lesson** [`lessons/2026-05-09-upgrade-5.7-and-f18-f17-mitigation.md`](lessons/2026-05-09-upgrade-5.7-and-f18-f17-mitigation.md) — | Item | Estado |
+- **Lesson** [`lessons/2026-05-17-launchagent-mac-stale-openclaw-version.md`](lessons/2026-05-17-launchagent-mac-stale-openclaw-version.md) — (sem TL;DR — ver lesson para detalhes)
+- **Lesson** [`lessons/2026-05-21-openclaw-5.20-upgrade-regressions.md`](lessons/2026-05-21-openclaw-5.20-upgrade-regressions.md) — (sem TL;DR — ver lesson para detalhes)
 - **Lesson** [`lessons/2026-05-08-post-v5.6-ops-fixes.md`](lessons/2026-05-08-post-v5.6-ops-fixes.md) — (sem TL;DR — ver lesson para detalhes)
 - **Lesson** [`lessons/2026-05-07-openclaw-v5.6-upgrade-completed.md`](lessons/2026-05-07-openclaw-v5.6-upgrade-completed.md) — (sem TL;DR — ver lesson para detalhes)
 - **Lesson** [`lessons/2026-05-06-whatsapp-creds-chattr-drift.md`](lessons/2026-05-06-whatsapp-creds-chattr-drift.md) — Primeiro run do smoke-test-whatsapp.sh em produção (recém-criado) revelou que /root/.openclaw/credentials/whatsapp/default/creds.json estava sem chattr +i — violação direta da lição 2026-05-04 (orches
