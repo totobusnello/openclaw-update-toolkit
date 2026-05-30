@@ -8,6 +8,7 @@ Versionamento independente do OpenClaw — kit segue semver próprio.
 ## [Unreleased]
 
 ### Adicionado
+- **Lesson** [`lessons/2026-05-30-openclaw-5.27-upgrade-and-vec0-cli-recovery.md`](lessons/2026-05-30-openclaw-5.27-upgrade-and-vec0-cli-recovery.md) — Upgrade 5.22→5.27 saiu limpo (zero downtime, 32s de gateway-ready). Mas o trabalho real foi de recovery: descobrimos que nox-mem-watch estava silenciosamente abortando ingests há 5 dias por uma cadeia
 - **Lesson** [`lessons/2026-05-24-upgrade-5.22-harness-restart-latency-and-plugin-config-env.md`](lessons/2026-05-24-upgrade-5.22-harness-restart-latency-and-plugin-config-env.md) — (sem TL;DR — ver lesson para detalhes)
 - **Lesson** [`lessons/2026-05-08-09-invariant-upgrade-and-health-probe-race.md`](lessons/2026-05-08-09-invariant-upgrade-and-health-probe-race.md) — (sem TL;DR — ver lesson para detalhes)
 - **Lesson** [`lessons/2026-05-09-upgrade-5.7-and-f18-f17-mitigation.md`](lessons/2026-05-09-upgrade-5.7-and-f18-f17-mitigation.md) — | Item | Estado |
