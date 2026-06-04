@@ -8,6 +8,8 @@ Versionamento independente do OpenClaw — kit segue semver próprio.
 ## [Unreleased]
 
 ### Adicionado
+- **Lesson** [`lessons/2026-06-02-eval-saturation-and-7-bugs-cascade.md`](lessons/2026-06-02-eval-saturation-and-7-bugs-cascade.md) — Sessão de 4h45 disparada por agents Discord/WhatsApp travados. Causa imediata: eval do memoria-nox consumindo 395% CPU + 62.7% steal time do hypervisor Hostinger (noisy neighbor). Toto autorizou parar
+- **Lesson** [`lessons/2026-06-04-openclaw-6.1-upgrade-patches-native.md`](lessons/2026-06-04-openclaw-6.1-upgrade-patches-native.md) — Upgrade planejado de 2026.5.27 → 2026.6.1 (a 5.28 que estava agendada já havia sido superada; latest no npm = 6.1). Salto de changelog sem nenhuma seção "Breaking". O achado central: os três monkey-pa
 - **Lesson** [`lessons/2026-05-31-external-plugins-phase7-and-discord-silent-success.md`](lessons/2026-05-31-external-plugins-phase7-and-discord-silent-success.md) — Toto reportou ⚠️ WhatsApp e Discord offline — verificar no dia seguinte ao upgrade 5.22→5.27. Investigação revelou 4 problemas distintos em camadas, sendo apenas 2 deles realmente "offline":
 - **Lesson** [`lessons/2026-05-30-openclaw-5.27-upgrade-and-vec0-cli-recovery.md`](lessons/2026-05-30-openclaw-5.27-upgrade-and-vec0-cli-recovery.md) — Upgrade 5.22→5.27 saiu limpo (zero downtime, 32s de gateway-ready). Mas o trabalho real foi de recovery: descobrimos que nox-mem-watch estava silenciosamente abortando ingests há 5 dias por uma cadeia
 - **Lesson** [`lessons/2026-05-24-upgrade-5.22-harness-restart-latency-and-plugin-config-env.md`](lessons/2026-05-24-upgrade-5.22-harness-restart-latency-and-plugin-config-env.md) — (sem TL;DR — ver lesson para detalhes)
