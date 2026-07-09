@@ -8,6 +8,11 @@ Versionamento independente do OpenClaw — kit segue semver próprio.
 ## [Unreleased]
 
 ### Adicionado
+- **Lesson** [`lessons/2026-06-17-toolsallow-incompatible-claude-cli.md`](lessons/2026-06-17-toolsallow-incompatible-claude-cli.md) — (sem TL;DR — ver lesson para detalhes)
+- **Lesson** [`lessons/2026-06-21-openclaw-6.8-to-6.9-upgrade-and-skill-symlink-escape.md`](lessons/2026-06-21-openclaw-6.8-to-6.9-upgrade-and-skill-symlink-escape.md) — (sem TL;DR — ver lesson para detalhes)
+- **Lesson** [`lessons/2026-06-30-openclaw-6.11-upgrade.md`](lessons/2026-06-30-openclaw-6.11-upgrade.md) — (sem TL;DR — ver lesson para detalhes)
+- **Lesson** [`lessons/2026-07-07-toolsallow-legacy-marker-breaks-cli-fallback.md`](lessons/2026-07-07-toolsallow-legacy-marker-breaks-cli-fallback.md) — - claude-cli cannot enforce runtime toolsAllow → fallback silencioso pra um modelo sem Bash → agente "some".
+- **Lesson** [`lessons/2026-07-09-reply-session-init-conflict-and-contributing-upstream.md`](lessons/2026-07-09-reply-session-init-conflict-and-contributing-upstream.md) — - reply session initialization conflicted com messageIds distintos + sessão viva = transient drop benigno; com mesma messageId + sessão travada = wedge (real, precisa fix//reset).
 - **Lesson** [`lessons/2026-06-20-claude-cli-resume-hang-and-fallback-recovery.md`](lessons/2026-06-20-claude-cli-resume-hang-and-fallback-recovery.md) — Um turn provider=claude-cli model=claude-sonnet-4-6 trigger=user ficou 900s sem emitir um único byte (sem stream, sem rawLines) e foi morto pelo watchdog: claude live session turn failed ... durationM
 - **Lesson** [`lessons/2026-06-16-openclaw-6.8-apply-patches-pattern-drift.md`](lessons/2026-06-16-openclaw-6.8-apply-patches-pattern-drift.md) — (sem TL;DR — ver lesson para detalhes)
 - **Lesson** [`lessons/2026-06-09-openclaw-6.5-upgrade-patches-not-native-and-backup-retention.md`](lessons/2026-06-09-openclaw-6.5-upgrade-patches-not-native-and-backup-retention.md) — Upgrade planejado 2026.6.5 (primeiro stable do train 6.5, depois de 5 betas). A lição central é o oposto da do upgrade anterior: no 6.1, três monkey-patches viraram correções nativas e foram aposentad
